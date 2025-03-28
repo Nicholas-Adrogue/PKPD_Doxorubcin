@@ -12,11 +12,19 @@ global r_on r V_1 V_3 V_m K_10 K_12 K_21 K_m K_34 K_43 K_30;
 % V_150, V_3=15, V_m=1,
 % K_10=0.04, K_12=0.2, K_21=0.1, K_m=10, K_34=0.9, K_43=0.4, K_30=2
 
-r_on = 1000;    % Input when the dose is being given
+% Dosage Calculation
+dose = 60;       % (mg/m^2)
+Height = 186;    % (cm)
+Weight = 70;     % (kg)
+BSA = (Height*Weight/3600)^0.5; % Mosteller's Body Surface Area (m^2)
+r_on = dose*BSA;    % Input when the dose is being given (mg)
+
+% Constants
 r = r_on;       % Input
 V_1 = 50;       % Volume of the bloodstream
 V_3 = 15;       % Volume of the target cell
-V_m = 1;        % Volume of stuff moving from bloodstream to target cell
+V_m = 10;       % Volume of stuff moving from bloodstream to target cell
+
 % Constants between each compartment
 K_10 = 0.04;
 K_12 = 0.2;
@@ -29,7 +37,7 @@ K_30 = 2;
 %% Initial conditions
 Tf = 40;
 % Amount in each compartment at time 0
-x1_0 = 0; 
+x1_0 = 0;
 x2_0 = 0;
 x3_0 = 0;
 x4_0 = 0;
@@ -46,7 +54,7 @@ y2 = Xf(:,3)/V_3;
 % The values:   [x1, x2, x3, x4]
 function dX = PKPD(t,X)
     global r_on r V_1 V_3 V_m K_10 K_12 K_21 K_m K_34 K_43 K_30;
-    % Dosage calculation
+    % % Dosage calculation
     % if(mod(t,10) < 0.1)
     %     r=r_on;
     % end
