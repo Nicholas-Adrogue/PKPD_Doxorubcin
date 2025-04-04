@@ -5,7 +5,7 @@ clc;
 opts = odeset('RelTol',1e-8,'AbsTol',1e-10);
 
 %% Defining global variables
-global tox int_hrs r_on r V_1 V_3 V_m CC CellRep K_10 K_12 K_21 K_m K_34 K_43 K_30;
+global tox int_hrs r_on r V_1 V_2 V_3 V_4 V_m CC CellRep K_10 K_12 K_21 K_m K_34 K_43 K_30;
 
 %% Constants
 % From D'Argenio:
@@ -25,27 +25,29 @@ r_on = dose*BSA;    % Input when the dose is being given (mg)
 
 % Constants
 r = r_on;       % Input
-V_1 = 50;       % Volume of the bloodstream
-V_3 = 15;       % Volume of the target cell
-V_m = 10;       % Volume of stuff moving from bloodstream to target cell
-CC = 500000;    % Carrying capacity of heart cells
+V_1 = 5000;     % Volume of the bloodstream (mL)
+V_2 = 90*1e-12; % Volume of the erythrocytes (mL)
+V_3 = 2.5e-8;   % Volume of the target cell (mL)
+V_4 = 0.1*V_3;  % Volume of the nucleus of the target cell (mL)
+V_m = 24*1000/24; % Volume of stuff moving from bloodstream to target cell (mL/Hr)
+CC = 500000;    % Carrying capacity of heart cells (#)
 CellRep = 0.01*CC/8760; % Speed at which heart cells are replaced (#/hour)
 tox = 20; % Toxicity coefficient
 
 % Constants between each compartment
 K_10 = .04;
-K_12 = .02;
-K_21 = .01;
-K_m = 0.1;
+K_12 = .2;
+K_21 = .1;
+K_m = 10;
 K_34 = .09;
 K_43 = .04;
-K_30 = 0.2;
+K_30 = 2;
 
 %% Initial conditions
-interval = 21; % Days
-int_hrs = 21*24; % Hours
-NumDoses = 4; % Number of doses
-Tf = int_hrs*NumDoses; % Hours
+interval = 21; % (Days) Time between doses
+int_hrs = 21*24; % (Hours) Time between doses
+NumDoses = 4; % (#) Number of doses total
+Tf = int_hrs*NumDoses; % (Hours) Time total
 % Amount in each compartment at time 0
 x1_0 = 0;
 x2_0 = 0;
@@ -64,7 +66,7 @@ y2 = Xf(:,3)/V_3;
 % For indices: X[ 1,  2,  3,  4,  5]
 % The values:   [x1, x2, x3, x4,  c]
 function dX = PKPD(t,X)
-    global tox int_hrs r_on r V_1 V_3 V_m CC CellRep K_10 K_12 K_21 K_m K_34 K_43 K_30;
+    global tox int_hrs r_on r V_1 V_2 V_3 V_4 V_m CC CellRep K_10 K_12 K_21 K_m K_34 K_43 K_30;
     % Dosage calculation
     if(mod(t,int_hrs) < 0.5)
         r=r_on;
