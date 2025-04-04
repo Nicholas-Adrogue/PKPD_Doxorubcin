@@ -68,10 +68,10 @@ y2 = Xf(:,3)/V_3;
 function dX = PKPD(t,X)
     global tox int_hrs r_on r V_1 V_2 V_3 V_4 V_m CC CellRep K_10 K_12 K_21 K_m K_34 K_43 K_30;
     % Dosage calculation
-    if(mod(t,int_hrs) < 0.5)
+    if(t< 1)
         r=r_on;
     end
-    if(mod(t,int_hrs) >= 0.5)
+    if(t >= 1)
         r = 0;
     end
     % Calculate the dX/dt

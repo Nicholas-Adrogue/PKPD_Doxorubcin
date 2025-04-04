@@ -51,7 +51,7 @@ k_FE = 5.63e-4; %1/h
 k_BF = 1.22;    %1/h
 V_E = 100;      %µL
 V_I = 0.07;     %µL
-hl = 30;        %h (half-life)
+hl = 48;        %h (half-life)
 % Distributions (Normal????)
 k_p = normrnd(0.0198,0.002);        %1/h
 theta = normrnd(262209,13686);      %Dimensionless
@@ -75,7 +75,7 @@ for i=1:nsteps-1
     % Calculate the concentrations of each compartment
     X_E(i+1) = X_E(i) + dt*(k_EF*V_I/V_E*X_F(i) - k_FE*X_E(i) + I - log(2)/hl*X_E(i)); % - log(2)/hl*X_E(i) added for half-life
     X_F(i+1) = X_F(i) + dt*(k_FE*V_E/V_I*X_E(i) - k_EF*X_F(i) - k_BF*X_F(i));
-    X_B(i+1) = X_B(i) + dt*(k_BF*X_F(i) - gamma*X_B(i)); % - k_d*X_B(i) added for cell death
+    X_B(i+1) = X_B(i) + dt*(k_BF*X_F(i) - gamma*X_B(i) - k_d*X_B(i)); % - k_d*X_B(i) added for cell death
     N(i+1)   = N(i)   + dt*(k_p*N(i)*(1-N(i)/theta) - k_d*N(i));
 end
 

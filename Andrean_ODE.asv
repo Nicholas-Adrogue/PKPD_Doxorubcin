@@ -13,15 +13,14 @@ X_F0 = 0;   %nM
 X_B0 = 0;   %nM
 N0 = 1e5;   %#
 T0 = 0;     %h
-Tf = 1000;  %h
-% dt = 1e-4;
-% nsteps = 1000/dt;
-% opts = odeset(MinStep=dt, MaxStep=dt);
-% opts = odeset(InitialStep=dt);
+Tf = 1000;   %h
+dt = 1e-4;
+opts = odeset(MinStep=dt, MaxStep=dt);
+nsteps = 1000
 
 %% ODE function
 X0 = [X_E0, X_F0, X_B0, N0];
-[T,Xf] = ode45(@PKPD, [T0,Tf], X0);
+[T,Xf] = ode45(@PKPD, [T0,Tf], X0, opts);
 
 function dX = PKPD(t,X)
     % Coefficients
@@ -60,7 +59,7 @@ function dX = PKPD(t,X)
     % Calculate the concentrations of each compartment
     dX(1) = k_EF*V_I/V_E*X_F - k_FE*X_E + I - log(2)/hl*X_E; % - log(2)/hl*X_E added for half-life
     dX(2) = k_FE*V_E/V_I*X_E - k_EF*X_F - k_BF*X_F;
-    dX(3) = k_BF*X_F - gamma*X_B - k_d*X_B; % - k_d*X_B added for cell death
+    dX(3) = k_BF*X_F - gamma*X_B; % - k_d*X_B added for cell death
     dX(4) = k_p*N*(1-N/theta) - k_d*N;
 end
 
