@@ -4,35 +4,18 @@
 clear;
 close all;
 clc;
-
 PatData = readtable("synthetic_patient_data.csv");
 ToxData = readtable("synthetic_toxicity_data.csv");
 
-V_max = 1.65e4; %nM/h
-k_th = 464;     %nM
-k_FE = 5.63e-4; %1/h
-k_BF = 1.22;    %1/h
-V_I = 2/1000*0.0386;%L
-WBCn = ToxData.NadirWBC_x10_3_l;    %#/mL
+WBC0 = ToxData.InitialWBC_x10_3_l;  %#/e3/µL
+dose = ToxData.MaximumInfusionRate_mg_m_3_day_; %mg/m^2/day
+WBCn = ToxData.NadirWBC_x10_3_l;    %#/e3/µL
 maxDox = ToxData.MaximumDoxorubicinConcentration_ng_ml_+ ...
         ToxData.MaximumDoxorubicinolConcentration_ng_ml_; %ng/mL
+maxDoxCalc = zeros(length(maxDox),1);
+WBCnCalc = zeros(length(WBCn),1);
 
-an = lsqnonlin(@diff,[V_max,k_th,k_FE,k_BF,V_I,0]);
-
-function C = diff(K)
-if (count==0)
-    count = K(6);
-end
-count = count+1;
-
-PatData = readtable("synthetic_patient_data.csv");
-ToxData = readtable("synthetic_toxicity_data.csv");
-
-WBC0 = ToxData.InitialWBC_x10_3_l;  %#/mL
-dose = ToxData.MaximumInfusionRate_mg_m_3_day_; %mg/m^2/day
-
-
-for j=1:2 %length(WBC0)
+for j=1:length(WBC0)
 %% Dosage Calculation 
 MM = 543.52*1000/1e9;   %Molar Mass of DOXO (mg/nmol)
 V_E = 5;        %L
@@ -44,6 +27,7 @@ end
 Weight = 70;     %(kg)
 BSA = (Height*Weight/3600)^0.5; %Mosteller's Body Surface Area (m^2)
 I = dose(j)*BSA/MM/24/V_E;      %Input (nM/h)
+Cm = maxDox(j)*1000;            %Max concentration (nM)
 
 %% Initial conditions
 % Initial conditions
@@ -51,12 +35,12 @@ X_E0 = 0;   %nM
 X_F0 = 0;   %nM
 X_B0 = 0;   %nM
 X_I0 = X_F0 + X_B0;
-N0 = WBC0(j)/1e3*V_E;   %#
+N0 = WBC0(j)*1e3*V_E*1e6;   %#
 
 %% Setting up the functions
 % Time start, end, step, number of steps
 T0 = 0;     %h
-Tf = 10000; %h
+Tf = 5000; %h
 Weeks = 20; %Weeks
 dt = 1e-3;  %h
 nsteps = Tf/dt;
@@ -74,11 +58,11 @@ dhl = 5/60;     %h (distribution half-life)
 ehl = 48;       %h (elimination half-life)
 hl = ehl;
 q = 2.31;       %Dimensionless constant
-V_max = K(1); %nM/h
-k_th = K(2);     %nM
-k_FE = K(3); %1/h
-k_BF = K(4);    %1/h
-V_I = K(5); %L
+V_max = 16500; %nM/h
+k_th = 464;     %nM
+k_FE = 5.63e-4; %1/h
+k_BF = 1.22;    %1/h
+V_I = 4.68e-13*N0; %L
 
 % Distributions
 % k_p = normrnd(0.0198,0.002);        %1/h
@@ -88,7 +72,8 @@ V_I = K(5); %L
 % gamma = normrnd(0.0044,0.004);      %1/h
 
 k_p = 0.0198;       %1/h
-theta = 8.4e6;      %#
+V_blood = 5;        %L
+theta = 11000*1e6*V_blood;      %#
 K_dmax = 0.0435;    %1/h
 X_BHS = 47.5;       %nM
 gamma = 0.0044;     %1/h
@@ -111,6 +96,47 @@ for i=1:nsteps-1
     X_I(i+1) = X_F(i+1) + X_B(i+1);
     N(i+1)   = N(i)   + dt*(k_p*N(i)*(1-(N(i)/theta)) - k_d*N(i));
 end
-C = [X_E,X_F,X_B,X_I,N];
+maxDoxCalc(j) = X_E(2000/dt); %nM
+WBCnCalc(j) = min(N); %#
 end
-end
+
+% Plots
+% X_E graph for current Itot
+figure(1);
+plot(T,X_E, '-r','linewidth',2); hold off;
+legend('X_E');
+title('Pharmacokinetic Model of DOXO');
+xlabel('Time (hours)');
+ylabel('DOXO (nM)');
+set(gca,'fontsize',20);
+set(gcf,'color','w');
+
+% N graph for current Itot
+figure(5);
+plot(T,N, '-r','linewidth',2); hold off;
+legend('N');
+title('Pharmacodynamic Model of Doxorubicin');
+xlabel('Time (hours)');
+ylabel('Number of Cells');
+set(gca,'fontsize',20);
+set(gcf,'color','w');
+
+figure(6);
+scatter(maxDox,(maxDoxCalc/1e3),'filled'); hold on;
+plot([1:25],[1:25],'--k', 'LineWidth',1.5); hold off;
+title('Pharmacokinetic Model of Doxorubicin');
+xlabel('Actual Maximum DOXO concentration (ng/mL)');
+ylabel('Calculated Maximum DOXO concentration (ng/mL)');
+set(gca,'fontsize',20);
+set(gcf,'color','w');
+legend('Max DOXO','y=x');
+ylim([0,15]);
+
+figure(7);
+scatter(WBCn,(WBCnCalc/1e3/V_E/1e6),'filled'); hold on;
+plot([1:25],[1:25],'--k', 'LineWidth',1.5); hold off;
+title('Pharmacokinetic Model of Doxorubicin');
+xlabel('Actual Minimum WBC count (#/mL)');
+ylabel('Calculated Minimum WBC Count (#/mL)');
+set(gca,'fontsize',20);
+set(gcf,'color','w');

@@ -7,9 +7,9 @@ clc;
 PatData = readtable("synthetic_patient_data.csv");
 ToxData = readtable("synthetic_toxicity_data.csv");
 
-WBC0 = ToxData.InitialWBC_x10_3_l;  %#/mL
-WBCn = ToxData.NadirWBC_x10_3_l;    %#/mL
+WBC0 = ToxData.InitialWBC_x10_3_l;  %#/e3/µL
 dose = ToxData.MaximumInfusionRate_mg_m_3_day_; %mg/m^2/day
+WBCn = ToxData.NadirWBC_x10_3_l;    %#/e3/µL
 maxDox = ToxData.MaximumDoxorubicinConcentration_ng_ml_+ ...
         ToxData.MaximumDoxorubicinolConcentration_ng_ml_; %ng/mL
 maxDoxCalc = zeros(length(maxDox),1);
@@ -35,7 +35,7 @@ X_E0 = 0;   %nM
 X_F0 = 0;   %nM
 X_B0 = 0;   %nM
 X_I0 = X_F0 + X_B0;
-N0 = WBC0(j)/1e3*V_E;   %#
+N0 = WBC0(j)*1e3*V_E*1e6;   %#
 
 %% Setting up the functions
 % Time start, end, step, number of steps
@@ -96,8 +96,8 @@ for i=1:nsteps-1
     X_I(i+1) = X_F(i+1) + X_B(i+1);
     N(i+1)   = N(i)   + dt*(k_p*N(i)*(1-(N(i)/theta)) - k_d*N(i));
 end
-maxDoxCalc(j) = X_E(2000/dt);
-WBCnCalc(j) = min(N);
+maxDoxCalc(j) = X_E(2000/dt); %nM
+WBCnCalc(j) = min(N); %#
 end
 
 % Plots
@@ -106,16 +106,6 @@ figure(1);
 plot(T,X_E, '-r','linewidth',2); hold off;
 legend('X_E');
 title('Pharmacokinetic Model of DOXO');
-xlabel('Time (hours)');
-ylabel('DOXO (nM)');
-set(gca,'fontsize',20);
-set(gcf,'color','w');
-
-% X_I graph for current Itot
-figure(4);
-plot(T,X_I, '-r','linewidth',2); hold off;
-legend('X_I');
-title('Pharmacokinetic Model of Doxorubicin Concentration in the body over time');
 xlabel('Time (hours)');
 ylabel('DOXO (nM)');
 set(gca,'fontsize',20);
@@ -132,16 +122,19 @@ set(gca,'fontsize',20);
 set(gcf,'color','w');
 
 figure(6);
-scatter(maxDox,(maxDoxCalc/1e3),'o','linewidth',2); hold off;
+scatter(maxDox,(maxDoxCalc/1e3),'filled'); hold on;
+plot([1:25],[1:25],'--k', 'LineWidth',1.5); hold off;
 title('Pharmacokinetic Model of Doxorubicin');
 xlabel('Actual Maximum DOXO concentration (ng/mL)');
 ylabel('Calculated Maximum DOXO concentration (ng/mL)');
 set(gca,'fontsize',20);
 set(gcf,'color','w');
-legend('maxdox','maxdoxcalc','asdf')
+legend('Max DOXO','y=x');
+yaxis([0,15]);
 
 figure(7);
-scatter(WBCn,(WBCnCalc*1e3/V_E),'linewidth',2); hold off;
+scatter(WBCn,(WBCnCalc/1e3/V_E/1e6),'filled'); hold on;
+plot([1:25],[1:25],'--k', 'LineWidth',1.5); hold off;
 title('Pharmacokinetic Model of Doxorubicin');
 xlabel('Actual Minimum WBC count (#/mL)');
 ylabel('Calculated Minimum WBC Count (#/mL)');
