@@ -124,13 +124,13 @@ set(gcf,'color','w');
 figure(6);
 scatter(maxDox,(maxDoxCalc/1e3),'filled'); hold on;
 plot([1:25],[1:25],'--k', 'LineWidth',1.5); hold off;
-title('Pharmacokinetic Model of Doxorubicin');
+title('Maximum Concentration of DOXO');
 xlabel('Actual Maximum DOXO concentration (ng/mL)');
 ylabel('Calculated Maximum DOXO concentration (ng/mL)');
 set(gca,'fontsize',20);
 set(gcf,'color','w');
 legend('Max DOXO','y=x');
-yaxis([0,15]);
+ylim([0,15]);
 
 figure(7);
 scatter(WBCn,(WBCnCalc/1e3/V_E/1e6),'filled'); hold on;
