@@ -9,7 +9,7 @@ for Itot = [50,100,200] %nM
 %% Initial conditions
 % Duration of dose Ihrs, Amount per hour Ion
 Ihrs = 3;           %h
-Ion = Itot/Ihrs;    %nM/h
+Ion = Itot;    %nM/h
 % Initial conditions
 I0 = 0;     %nM
 X_E0 = I0;  %nM
@@ -60,22 +60,22 @@ for i=1:nsteps-1
     % Calculate input
     t = i*dt;
     if (Itot == 200)
-        if ((t>=50 && t<53))
-            I = Ion;
+        if (t==50)
+            X_E(i) = Ion;
         elseif ((t==53))
-            I=0; X_E(i) = 0;
+            X_E(i) = 0;
         end
     elseif (Itot == 100)
-        if ((t>=50 && t<53) || (t>=350 && t<353))
-            I = Ion;
+        if ((t==50) || (t==350))
+            X_E(i) = Ion;
         elseif ((t==53) || (t==353))
-            I=0; X_E(i) = 0;
+            X_E(i) = 0;
         end
     elseif (Itot == 50)
-        if ((t>=50 && t<53) || (t>=150 && t<153) || (t>=300 && t<303) || (t>=450 && t<453))
-            I = Ion;
+        if ((t==50) || (t==150) || (t==300) || (t==450))
+            X_E(i) = Ion;
         elseif ((t==53) || (t==153) || (t==303) || (t==453))
-            I=0; X_E(i) = 0;
+            X_E(i) = 0;
         end
     end
 
@@ -182,7 +182,19 @@ xlabel('Time (hours)');
 ylabel('Concentration of Doxorubicin (nM)');
 set(gca,'fontsize',20);
 set(gcf,'color','w');
-axis([50,56,0,150]);
+axis([50,56,0,160]);
+
+% X_B
+figure(7);
+plot(T,X_B_200, '-r','linewidth',2); hold on;
+plot(T,X_B_100, '-g','linewidth',2); hold on;
+plot(T,X_B_50, '-b','linewidth',2); hold off;
+legend('200 nM', '100 nM', '50 nM');
+title('Pharmacokinetic Model of Doxorubicin Concentration');
+xlabel('Time (hours)');
+ylabel('Concentration of Doxorubicin (nM)');
+set(gca,'fontsize',20);
+set(gcf,'color','w');
 
 % N graph for all Itot
 figure(8);
