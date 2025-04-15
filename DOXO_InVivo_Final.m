@@ -4,57 +4,18 @@
 clear;
 close all;
 clc;
-
 PatData = readtable("synthetic_patient_data.csv");
 ToxData = readtable("synthetic_toxicity_data.csv");
 
-T0 = 0;     %h
-Tf = 10000; %h
-dt = 1e-3;  %h
-nsteps = Tf/dt;
-V_E = 5; %L
+WBC0 = ToxData.InitialWBC_x10_3_l;  %#/e3/µL
+dose = ToxData.MaximumInfusionRate_mg_m_3_day_; %mg/m^2/day
+WBCn = ToxData.NadirWBC_x10_3_l;    %#/e3/µL
+maxDox = ToxData.MaximumDoxorubicinConcentration_ng_ml_+ ...
+        ToxData.MaximumDoxorubicinolConcentration_ng_ml_; %ng/mL
+maxDoxCalc = zeros(length(maxDox),1);
+WBCnCalc = zeros(length(WBCn),1);
 
-%% Variables and their Bounds
-V_max = 1.65e4; %nM/h K(5)
-k_th = 464;     %nM K(6)
-
-K_dmax = 0.0435;    %1/h K(1)
-X_BHS = 47.5;       %nM K(2)
-ehl = 48;       %h (elimination half-life)
-hl = ehl;   %K(7)
-k_BF = 1.22e-6;    %K(8)
-
-% Maximum Concentration
-MaxDox = ToxData.MaximumDoxorubicinConcentration_ng_ml_+ToxData.MaximumDoxorubicinolConcentration_ng_ml_;
-MnDox = mean(MaxDox);   %ng/mL
-Cm = MnDox*1e3;         %Max concentration (nM)
-CmCalc = 6000;          %K(3)
-
-% Minimum WBC
-WBCn = ToxData.NadirWBC_x10_3_l;
-MnNm = mean(WBCn);          %#/e3/µL
-Nmin = MnNm*1e3*V_E*1e6;    %#
-NminCalc = 0;               %K(4)
-
-an = lsqnonlin(@diff,[K_dmax,X_BHS,CmCalc,NminCalc,V_max,k_th,hl,k_BF],[0,0,Cm-10,Nmin-0.001,0,0,0,0],[inf,inf,Cm+10,inf,inf,inf,inf,1]);
-K_dmax = an(1)
-X_BHS = an(2)
-CmCalc = an(3)
-NminCalc = an(4)
-V_max = an(5)
-k_th = an(6)
-hl = an(7)
-k_BF = an(8)
-
-%% Differential Function
-function C = diff(K)
-PatData = readtable("synthetic_patient_data.csv");
-ToxData = readtable("synthetic_toxicity_data.csv");
-
-%% Dosage Distribution
-R_I = PatData.MaximumInfusionRate_mg_m_3_day_;
-dose = mean(R_I);
-
+for j=1:length(WBC0)
 %% Dosage Calculation 
 MM = 543.52*1000/1e9;   %Molar Mass of DOXO (mg/nmol)
 V_E = 5;        %L
@@ -65,7 +26,8 @@ else
 end
 Weight = 70;     %(kg)
 BSA = (Height*Weight/3600)^0.5; %Mosteller's Body Surface Area (m^2)
-I = dose*BSA/MM/24/V_E;      %Input (nM/h)
+I = dose(j)*BSA/MM/24/V_E;      %Input (nM/h)
+Cm = maxDox(j)*1000;            %Max concentration (nM)
 
 %% Initial conditions
 % Initial conditions
@@ -73,13 +35,13 @@ X_E0 = 0;   %nM
 X_F0 = 0;   %nM
 X_B0 = 0;   %nM
 X_I0 = X_F0 + X_B0;
-WBC0 = ToxData.InitialWBC_x10_3_l;  %#/e3/µL
-N0 = mean(WBC0)*1e3*V_E*1e6;            %#
+N0 = WBC0(j)*1e3*V_E*1e6;   %#
 
 %% Setting up the functions
 % Time start, end, step, number of steps
 T0 = 0;     %h
-Tf = 10000; %h
+Tf = 5000; %h
+Weeks = 20; %Weeks
 dt = 1e-3;  %h
 nsteps = Tf/dt;
 % Set up I and the Vectors
@@ -88,16 +50,18 @@ X_E = zeros(1,nsteps); X_E(1) = X_E0;
 X_F = zeros(1,nsteps); X_F(1) = X_F0;
 X_B = zeros(1,nsteps); X_B(1) = X_B0;
 X_I = zeros(1,nsteps); X_I(1) = X_I0;
-N = zeros(1,nsteps); N(1) = N0;
+N   = zeros(1,nsteps); N(1)   = N0;
 
 %% Coefficient Values
 % Constants
-hl = K(7);
+dhl = 5/60;     %h (distribution half-life)
+ehl = 48;       %h (elimination half-life)
+hl = ehl;
 q = 2.31;       %Dimensionless constant
-V_max = K(5); %nM/h
-k_th = K(6);     %nM
+V_max = 1.65e4; %nM/h %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+k_th = 464;     %nM
 k_FE = 5.63e-4; %1/h
-k_BF = K(8);    %1/h
+k_BF = 3.5549e-5;    %1/h
 V_I = 4.68e-13*N0; %L
 
 % Distributions
@@ -110,8 +74,8 @@ V_I = 4.68e-13*N0; %L
 k_p = 0.0198;       %1/h
 V_blood = 5;        %L
 theta = 11000*1e6*V_blood;      %#
-K_dmax = K(1);    %1/h
-X_BHS = K(2);       %nM
+K_dmax = 0.0454;    %1/h %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+X_BHS = 47.4939;       %nM %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 gamma = 0.0044;     %1/h
 
 %% Forward Euler
@@ -129,6 +93,10 @@ for i=1:nsteps-1
     X_I(i+1) = X_F(i+1) + X_B(i+1);
     N(i+1)   = N(i)   + dt*(k_p*N(i)*(1-(N(i)/theta)) - k_d*N(i));
 end
+maxDoxCalc(j) = X_E(2000/dt); %nM
+WBCnCalc(j) = min(N); %#
+end
+
 % Plots
 % X_E graph for current Itot
 figure(1);
@@ -150,5 +118,28 @@ ylabel('Number of Cells');
 set(gca,'fontsize',20);
 set(gcf,'color','w');
 
-C = [K_dmax,X_BHS,X_E(3000/dt),min(N),V_max,k_th,hl,k_BF];
-end
+figure(6);
+scatter(maxDox,(maxDoxCalc/1e3),'filled'); hold on;
+plot([1:25],[1:25],'--k', 'LineWidth',1.5); hold off;
+title('Maximum Concentration of DOXO');
+xlabel('Actual Maximum DOXO concentration (ng/mL)');
+ylabel('Calculated Maximum DOXO concentration (ng/mL)');
+set(gca,'fontsize',20);
+set(gcf,'color','w');
+legend('Max DOXO','y=x');
+ylim([0,15]);
+
+diffMaxDox = abs(maxDox-(maxDoxCalc/1e3));
+meanDiffMaxDox = mean(diffMaxDox); %ng/mL
+
+figure(7);
+scatter(WBCn,(WBCnCalc/1e3/V_E/1e6),'filled'); hold on;
+plot([1:10],[1:10],'--k', 'LineWidth',1.5); hold off;
+title('Minimum WBC count');
+xlabel('Actual Minimum WBC count (#/mL)');
+ylabel('Calculated Minimum WBC Count (#/mL)');
+set(gca,'fontsize',20);
+set(gcf,'color','w');
+
+diffWBCn = abs(WBCn-(WBCnCalc/1e3/V_E/1e6));
+meanDiffWBCn = mean(diffWBCn); %#/mL

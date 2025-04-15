@@ -159,7 +159,7 @@ plot(T,X_I_200, '-r','linewidth',2); hold on;
 plot(T,X_I_100, '-g','linewidth',2); hold on;
 plot(T,X_I_50, '-b','linewidth',2); hold off;
 legend('200 nM', '100 nM', '50 nM');
-title('Pharmacokinetic Model of Doxorubicin Concentration');
+title('Pharmacokinetic Model of DOXO X_I');
 xlabel('Time (hours)');
 ylabel('Concentration of Doxorubicin (nM)');
 set(gca,'fontsize',20);
@@ -185,11 +185,25 @@ set(gcf,'color','w');
 axis([50,56,0,160]);
 
 % X_B
+X_B_test = linspace(1,100,1e8);
+k_d_test = K_dmax.*X_B_test./(X_BHS+X_B_test);
+X_B_d = -1;
+idx = 1;
+while (1)
+    if (k_d_test(idx)>k_p)
+        X_B_d = X_B_test(idx);
+        break;
+    end
+    idx = idx+1;
+end
+X_B_lim = X_B_d .* ones(1,length(X_B));
+
 figure(7);
 plot(T,X_B_200, '-r','linewidth',2); hold on;
 plot(T,X_B_100, '-g','linewidth',2); hold on;
-plot(T,X_B_50, '-b','linewidth',2); hold off;
-legend('200 nM', '100 nM', '50 nM');
+plot(T,X_B_50, '-b','linewidth',2); hold on;
+plot(T,X_B_lim, '--', 'linewidth',2, 'Color',[0.1 0.1 0.1 0.2]); hold off;
+legend('200 nM', '100 nM', '50 nM', 'k_d=k_p');
 title('Bound Doxorubicin');
 xlabel('Time (hours)');
 ylabel('Concentration of Doxorubicin (nM)');
