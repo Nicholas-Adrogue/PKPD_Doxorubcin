@@ -136,7 +136,8 @@ sigT = sqrt(n*(n+1)*(2*n+1)/24);
 diffMaxDox = abs(maxDox-(maxDoxCalc/1e3));
 meanDiffMaxDox = mean(diffMaxDox); %ng/mL
 sumDiffMaxDox = sum(diffMaxDox); %ng/mL
-[MaxDoxPval,MaxDoxH,MaxDoxZt] = signrank(maxDox,(maxDoxCalc/1e3));
+[MaxDoxPval,MaxDoxH,MaxDoxZt] = signrank(maxDox,(maxDoxCalc/1e3)); %,'tail','right'
+MaxDoxCI = [muT-MaxDoxZt.zval*sigT, muT+MaxDoxZt.zval*sigT];
 
 figure(7);
 scatter(WBCn,(WBCnCalc/1e3/V_E/1e6),'filled'); hold on;
@@ -151,3 +152,4 @@ diffWBCn = abs(WBCn-(WBCnCalc/1e3/V_E/1e6));
 meanDiffWBCn = mean(diffWBCn); %#/mL
 sumDiffWBCn = sum(diffWBCn); %#/mL
 [MinWBCnPval,MinWBCnH,MinWBCnZt] = signrank(WBCn,(WBCnCalc/1e3/V_E/1e6));
+MinWBCnCI = [muT-MinWBCnZt.zval*sigT, muT+MinWBCnZt.zval*sigT];
